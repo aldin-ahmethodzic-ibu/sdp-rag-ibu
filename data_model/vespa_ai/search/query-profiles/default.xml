@@ -1,0 +1,4 @@
+<query-profile id="default" type="root">
+    <field name="maxHits">100000</field>
+    <field name="timeout">600</field>
+</query-profile>

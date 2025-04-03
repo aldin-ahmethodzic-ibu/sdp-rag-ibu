@@ -1,0 +1,59 @@
+schema resources {
+
+    document resources {
+
+        field resource_id type string {
+            indexing: index | summary
+            stemming: none
+        }
+
+        field title type string {
+            indexing: index | summary
+            stemming: none
+        }
+
+        field resource_text type string {
+            indexing: index | summary
+            stemming: none
+        }
+
+        field embedding type tensor<float>(x[3072]) {
+            indexing: attribute | index
+            attribute {
+                distance-metric: angular
+                paged
+            }
+            index {
+                hnsw {
+                    max-links-per-node: 16
+                    neighbors-to-explore-at-insert: 200
+                }
+            }
+        }
+
+        field created_at type string {
+            indexing: index | summary
+            stemming: none
+        }
+
+        field updated_at type string {
+            indexing: index | summary
+            stemming: none
+        }
+
+        field metadata type string {
+            indexing: index | summary
+        }
+
+    }
+
+    rank-profile embedding_query {
+        inputs {
+            query(query_embedding) tensor<float>(x[3072])
+        }
+        first-phase {
+            expression: cos(distance(field, embedding))
+        }
+    }
+
+}
