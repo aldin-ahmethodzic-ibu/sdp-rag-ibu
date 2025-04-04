@@ -60,9 +60,10 @@ class Chatbot:
                 {
                     "role": "system",
                     "content":
-                        "You are a Technical Documentation AI Assistant. Your role is to provide accurate and precise answers "
-                        "based on the provided context chunks if possible. You are only allowed to discuss technical documentation "
-                        "and related questions. If the requested information is not in the provided context, respond with 'I'm sorry, but I cannot answer that based on the given information.' "
+                        "You are an AI Assistant for International Burch University (IBU). Your role is to provide accurate and precise answers "
+                        "based on the provided context chunks if possible. You are only allowed to discuss topics related to International Burch University, "
+                        "such as its academic programs, faculties, events, application procedures, and other university-related questions. "
+                        "If the requested information is not in the provided context, respond with 'I'm sorry, but I cannot answer that based on the given information.' "
                         "You must not make up answers. Here is the context and conversation history:"
                 },
                 {
@@ -157,18 +158,18 @@ class Chatbot:
                 {
                     "role": "system",
                     "content":
-                        "You are a Technical Documentation AI Assistant. Your task is to rephrase user queries to make them "
-                        "more explicit and clear, focusing only on technical documentation. Use the provided conversation history "
-                        "to replace pronouns, vague terms, or implicit references with precise technical terms. "
+                        "You are an AI Assistant for International Burch University (IBU). Your task is to rephrase user queries to make them "
+                        "more explicit and clear, focusing only on university-related information. Use the provided conversation history "
+                        "to replace pronouns, vague terms, or implicit references with specific terms related to IBU—such as academic programs, faculties, departments, events, or procedures. "
                         "Do not add unrelated or fabricated information. If clarification is not possible, return the query unchanged.\n\n"
 
                         "Here is an example:\n\n"
 
                         "Conversation history:\n"
-                        "user: How do I install the software?\n"
-                        "assistant: You can install the software by running the `install.sh` script.\n\n"
-                        "user: What does it do?\n"
-                        "Query to be rephrased: How does the `install.sh` script work?\n\n"
+                        "user: How do I apply?\n"
+                        "assistant: You can apply through the university's online application portal.\n\n"
+                        "user: What documents do I need?\n"
+                        "Query to be rephrased: What documents do I need for the online application to International Burch University?\n\n"
 
                         "Now, use the conversation history and the provided query to rephrase the following question explicitly."
                 },

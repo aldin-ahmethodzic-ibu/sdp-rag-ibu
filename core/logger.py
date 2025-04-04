@@ -3,10 +3,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 from core.settings import ROOT_DIR
 
-# Ensure the logs directory exists
-LOGS_DIR = os.path.join(ROOT_DIR, "logs")
-os.makedirs(LOGS_DIR, exist_ok=True)
-
 
 def get_logger(name: str, log_file: str = "app.log", level: int = logging.INFO) -> logging.Logger:
     """
@@ -20,16 +16,13 @@ def get_logger(name: str, log_file: str = "app.log", level: int = logging.INFO) 
     Returns:
         logging.Logger: Configured logger instance.
     """
-    # Construct the full path for the log file
     log_file_path = os.path.join(LOGS_DIR, log_file)
 
-    # Create a logger
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
     # Check if logger already has handlers to avoid duplicate logs
     if not logger.hasHandlers():
-        # Console handler for stdout
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
         console_formatter = logging.Formatter(
@@ -37,7 +30,6 @@ def get_logger(name: str, log_file: str = "app.log", level: int = logging.INFO) 
         )
         console_handler.setFormatter(console_formatter)
 
-        # File handler with rotation
         file_handler = RotatingFileHandler(
             log_file_path, maxBytes=5 * 1024 * 1024, backupCount=3
         )
@@ -47,7 +39,6 @@ def get_logger(name: str, log_file: str = "app.log", level: int = logging.INFO) 
         )
         file_handler.setFormatter(file_formatter)
 
-        # Add handlers to the logger
         logger.addHandler(console_handler)
         logger.addHandler(file_handler)
 
