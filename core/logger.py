@@ -16,6 +16,7 @@ def get_logger(name: str, log_file: str = "app.log", level: int = logging.INFO) 
     Returns:
         logging.Logger: Configured logger instance.
     """
+    LOGS_DIR = os.path.join(ROOT_DIR, "logs")
     log_file_path = os.path.join(LOGS_DIR, log_file)
 
     logger = logging.getLogger(name)
