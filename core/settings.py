@@ -8,5 +8,8 @@ LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
+MONGO_URI = os.environ.get("MONGO_URI")
+DATABASE_NAME = os.environ.get("DATABASE_NAME")
+
 VESPA_HOST = os.environ.get("VESPA_HOST")
 VESPA_PORT = os.environ.get("VESPA_PORT")
