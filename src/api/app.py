@@ -62,14 +62,12 @@ async def read_users_me(current_user: DBUser = Depends(get_current_user)):
 
 @app.post("/register", response_model=User)
 async def register_user(user_data: UserCreate):
-    # Check if username already exists
     if await get_user(user_data.username):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered"
         )
     
-    # Create new user
     hashed_password = get_password_hash(user_data.password)
     db_user = DBUser(
         user_id=await DBUser.count() + 1,
@@ -108,7 +106,7 @@ async def ingest_urls(urls: List[str], current_user: DBUser = Depends(get_curren
     Raises:
         HTTPException: If user is not an admin or if ingestion fails
     """
-    # Check if user is admin
+    # Only admin users can ingest URLs
     if current_user.user_type != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -149,7 +147,7 @@ async def chat(
     current_user: DBUser = Depends(get_current_user)
 ):
     """
-    Chat with the RAG-powered chatbot and save the conversation history.
+    Chat with the RAG-powered IBU chatbot.
     
     Args:
         request: Chat request containing the user's question
@@ -162,17 +160,13 @@ async def chat(
         HTTPException: If chat processing fails
     """
     try:
-        # Initialize chatbot if not already done
         if not hasattr(app, 'chatbot'):
             app.chatbot = Chatbot()
             
-        # Generate or get existing session ID for the user
         session_id = str(uuid.uuid4())
         
-        # Get answer from chatbot
         answer = app.chatbot.get_answer(request.question, session_id)
         
-        # Save conversation to MongoDB
         session = Session(
             session_id=session_id,
             user_id=str(current_user.user_id),
