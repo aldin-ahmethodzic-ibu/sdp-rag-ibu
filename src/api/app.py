@@ -11,11 +11,15 @@ from .auth import (
 )
 from data_model.mongo_db.db import init_db
 from data_model.pydantic_models.auth import Token, User, UserCreate
+from data_model.pydantic_models.chat import ChatRequest, ChatResponse
 from data_model.mongo_db.schemas.user import User as DBUser
+from data_model.mongo_db.schemas.session import Session, Message
 from data_ingestion.url_to_txt import URLIngestion
 from data_ingestion.docs_ingestion import DocumentIngestion
 from core.logger import get_logger
 from core.utils import delete_temporary_files
+from src.chatbot import Chatbot
+import uuid
 
 app = FastAPI(title="SDP RAG API")
 
@@ -92,6 +96,7 @@ async def root():
 async def ingest_urls(urls: List[str], current_user: DBUser = Depends(get_current_user)):
     """
     Ingest content from a list of URLs into the Vespa vector database.
+    Only users with admin privileges can access this endpoint.
     
     Args:
         urls: List of URLs to scrape and ingest
@@ -99,7 +104,17 @@ async def ingest_urls(urls: List[str], current_user: DBUser = Depends(get_curren
         
     Returns:
         dict: Status message and list of processed URLs
+        
+    Raises:
+        HTTPException: If user is not an admin or if ingestion fails
     """
+    # Check if user is admin
+    if current_user.user_type != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin users can ingest URLs"
+        )
+        
     try:
         # Initialize ingestion classes
         url_ingestion = URLIngestion()
@@ -127,3 +142,52 @@ async def ingest_urls(urls: List[str], current_user: DBUser = Depends(get_curren
         # Ensure the webdriver is closed
         if 'url_ingestion' in locals():
             url_ingestion.driver.quit()
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(
+    request: ChatRequest,
+    current_user: DBUser = Depends(get_current_user)
+):
+    """
+    Chat with the RAG-powered chatbot and save the conversation history.
+    
+    Args:
+        request: Chat request containing the user's question
+        current_user: Current authenticated user
+        
+    Returns:
+        ChatResponse: The chatbot's answer and session ID
+        
+    Raises:
+        HTTPException: If chat processing fails
+    """
+    try:
+        # Initialize chatbot if not already done
+        if not hasattr(app, 'chatbot'):
+            app.chatbot = Chatbot()
+            
+        # Generate or get existing session ID for the user
+        session_id = str(uuid.uuid4())
+        
+        # Get answer from chatbot
+        answer = app.chatbot.get_answer(request.question, session_id)
+        
+        # Save conversation to MongoDB
+        session = Session(
+            session_id=session_id,
+            user_id=str(current_user.user_id),
+            messages=[
+                Message(content=request.question, role="user"),
+                Message(content=answer, role="assistant")
+            ]
+        )
+        await session.insert()
+        
+        return ChatResponse(
+            answer=answer,
+            session_id=session_id
+        )
+        
+    except Exception as e:
+        logger.error(f"Error during chat: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
