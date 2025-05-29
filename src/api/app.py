@@ -57,7 +57,6 @@ async def read_users_me(current_user: DBUser = Depends(get_current_user)):
         user_type=current_user.user_type,
         email=current_user.email,
         username=current_user.username,
-        disabled=current_user.disabled
     )
 
 @app.post("/register", response_model=User)
