@@ -83,7 +83,6 @@ async def register_user(user_data: UserCreate):
         user_type=db_user.user_type,
         email=db_user.email,
         username=db_user.username,
-        disabled=False
     )
 
 @app.get("/")

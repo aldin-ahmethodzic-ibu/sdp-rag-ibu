@@ -13,7 +13,6 @@ class User(BaseModel):
     user_type: str
     email: str
     username: str
-    disabled: Optional[bool] = None
 
 class UserCreate(BaseModel):
     email: EmailStr
