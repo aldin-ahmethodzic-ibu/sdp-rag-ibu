@@ -1,8 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.openapi.utils import get_openapi
 from .auth import (
     create_access_token,
     get_current_user,
@@ -15,38 +13,6 @@ from data_model.pydantic_models.auth import Token, User, UserCreate
 from data_model.mongo_db.schemas.user import User as DBUser
 
 app = FastAPI(title="SDP RAG API")
-
-app.swagger_ui_init_oauth = {
-    "usePkceWithAuthorizationCodeGrant": True
-}
-
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-    
-    openapi_schema = get_openapi(
-        title=app.title,
-        version="1.0.0",
-        description="SDP RAG API",
-        routes=app.routes,
-    )
-    
-    openapi_schema["components"] = {
-        "securitySchemes": {
-            "Bearer": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT",
-            }
-        }
-    }
-    
-    openapi_schema["security"] = [{"Bearer": []}]
-    
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
-app.openapi = custom_openapi
 
 app.add_middleware(
     CORSMiddleware,
