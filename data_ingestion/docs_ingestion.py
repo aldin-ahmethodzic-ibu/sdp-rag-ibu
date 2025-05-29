@@ -1,7 +1,5 @@
 import os
 import json
-import uuid
-from datetime import datetime
 from typing import List, Dict, Any
 import glob
 import hashlib
@@ -159,8 +157,3 @@ class DocumentIngestion:
         except Exception as e:
             logger.error(f"Error during document ingestion: {str(e)}")
             raise
-
-if __name__ == "__main__":
-    # Run the document ingestion
-    ingestion = DocumentIngestion()
-    ingestion.ingest_documents()

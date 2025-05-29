@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
+from typing import List
 from .auth import (
     create_access_token,
     get_current_user,
@@ -11,6 +12,10 @@ from .auth import (
 from data_model.mongo_db.db import init_db
 from data_model.pydantic_models.auth import Token, User, UserCreate
 from data_model.mongo_db.schemas.user import User as DBUser
+from data_ingestion.url_to_txt import URLIngestion
+from data_ingestion.docs_ingestion import DocumentIngestion
+from core.logger import get_logger
+from core.utils import delete_temporary_files
 
 app = FastAPI(title="SDP RAG API")
 
@@ -23,6 +28,7 @@ app.add_middleware(
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+logger = get_logger(__name__, log_file="ingestion.log")
 
 @app.on_event("startup")
 async def startup_event():
@@ -81,3 +87,43 @@ async def register_user(user_data: UserCreate):
 @app.get("/")
 async def root():
     return {"message": "Welcome to SDP RAG API"}
+
+@app.post("/ingest-urls")
+async def ingest_urls(urls: List[str], current_user: DBUser = Depends(get_current_user)):
+    """
+    Ingest content from a list of URLs into the Vespa vector database.
+    
+    Args:
+        urls: List of URLs to scrape and ingest
+        current_user: Current authenticated user
+        
+    Returns:
+        dict: Status message and list of processed URLs
+    """
+    try:
+        # Initialize ingestion classes
+        url_ingestion = URLIngestion()
+        doc_ingestion = DocumentIngestion()
+        
+        # Process URLs and save to text files
+        url_ingestion.process_urls(urls)
+        
+        # Ingest documents into Vespa
+        doc_ingestion.ingest_documents()
+        
+        # Clean up temporary files
+        delete_temporary_files()
+        
+        return {
+            "status": "success",
+            "message": "URLs successfully ingested into Vespa",
+            "processed_urls": urls
+        }
+        
+    except Exception as e:
+        logger.error(f"Error during URL ingestion: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Ensure the webdriver is closed
+        if 'url_ingestion' in locals():
+            url_ingestion.driver.quit()

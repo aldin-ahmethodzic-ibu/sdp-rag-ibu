@@ -1,6 +1,5 @@
 from bs4 import BeautifulSoup
 from typing import List, Optional
-from core.config import URLS_TO_SCRAPE
 from core.logger import get_logger
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -65,11 +64,11 @@ class URLIngestion:
             logger.error(f"Error extracting text from URL {url}: {str(e)}")
             return None
 
-    def process_urls(self, urls: List[str] = URLS_TO_SCRAPE) -> None:
+    def process_urls(self, urls: List[str]) -> None:
         """
         Process a list of URLs and extract text from each one.
 
-        :param urls: List of URLs to process. Defaults to URLS_TO_SCRAPE from config
+        :param urls: List of URLs to process
         """
         logger.info(f"Starting to process {len(urls)} URLs")
         
@@ -94,8 +93,3 @@ class URLIngestion:
                         logger.error(f"Failed to save text to file {filepath}: {str(e)}")
         finally:
             self.driver.quit()
-
-if __name__ == "__main__":
-    # Run the URL ingestion
-    url_ingestion = URLIngestion()
-    url_ingestion.process_urls()
