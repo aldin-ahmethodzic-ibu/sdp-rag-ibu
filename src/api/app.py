@@ -5,9 +5,11 @@ from .auth import (
     create_access_token,
     get_current_user,
     authenticate_user,
+    get_password_hash,
+    get_user,
 )
 from data_model.mongo_db.db import init_db
-from data_model.pydantic_models.auth import Token, User
+from data_model.pydantic_models.auth import Token, User, UserCreate
 from data_model.mongo_db.schemas.user import User as DBUser
 
 app = FastAPI(title="SDP RAG API")
@@ -46,6 +48,34 @@ async def read_users_me(current_user: DBUser = Depends(get_current_user)):
         email=current_user.email,
         username=current_user.username,
         disabled=current_user.disabled
+    )
+
+@app.post("/register", response_model=User)
+async def register_user(user_data: UserCreate):
+    # Check if username already exists
+    if await get_user(user_data.username):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered"
+        )
+    
+    # Create new user
+    hashed_password = get_password_hash(user_data.password)
+    db_user = DBUser(
+        user_id=await DBUser.count() + 1,
+        email=user_data.email,
+        username=user_data.username,
+        hashed_password=hashed_password,
+        user_type=user_data.user_type,
+    )
+    await db_user.insert()
+    
+    return User(
+        user_id=db_user.user_id,
+        user_type=db_user.user_type,
+        email=db_user.email,
+        username=db_user.username,
+        disabled=False
     )
 
 @app.get("/")
