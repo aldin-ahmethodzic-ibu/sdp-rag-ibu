@@ -11,7 +11,7 @@ from src.api.auth import (
 )
 from data_model.mongo_db.db import init_db
 from data_model.pydantic_models.auth import Token, User, UserCreate
-from data_model.pydantic_models.chat import ChatRequest, ChatResponse
+from data_model.pydantic_models.chat import ChatRequest, ChatResponse, SessionResponse
 from data_model.mongo_db.schemas.user import User as DBUser
 from data_model.mongo_db.schemas.session import Session, Message
 from data_ingestion.url_to_txt import URLIngestion
@@ -185,3 +185,36 @@ async def chat(
     except Exception as e:
         logger.error(f"Error during chat: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/sessions", response_model=List[SessionResponse])
+async def get_sessions(current_user: DBUser = Depends(get_current_user)):
+    """
+    Get all chat sessions for the authenticated user.
+    
+    Args:
+        current_user: Current authenticated user
+        
+    Returns:
+        List[SessionResponse]: List of all sessions with their messages
+        
+    Raises:
+        HTTPException: If session retrieval fails
+    """
+    try:
+        sessions = await Session.find(
+            Session.user_id == str(current_user.user_id)
+        ).sort(-Session.created_at).to_list()
+        
+        return sessions
+        
+    except Exception as e:
+        error_msg = f"Error retrieving sessions: {type(e).__name__}: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": error_msg,
+                "type": type(e).__name__,
+                "message": str(e) if str(e) else "Unknown error occurred"
+            }
+        )
