@@ -148,7 +148,7 @@ async def chat(
     Chat with the RAG-powered IBU chatbot.
     
     Args:
-        request: Chat request containing the user's question
+        request: Chat request containing the user's question and optional session_id
         current_user: Current authenticated user
         
     Returns:
@@ -161,19 +161,42 @@ async def chat(
         if not hasattr(app, 'chatbot'):
             app.chatbot = Chatbot()
             
-        session_id = str(uuid.uuid4())
+        # Use provided session_id or create new session
+        session_id = request.session_id
+        if not session_id:
+            session_id = str(uuid.uuid4())
+            session = Session(
+                session_id=session_id,
+                user_id=str(current_user.user_id),
+                messages=[
+                    Message(content=request.question, role="user")
+                ]
+            )
+            await session.insert()
+        else:
+            # Get existing session
+            session = await Session.find_one(Session.session_id == session_id)
+            if not session:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Session not found"
+                )
+            # Verify session belongs to user
+            if session.user_id != str(current_user.user_id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied to this session"
+                )
+            # Append new message
+            session.messages.append(Message(content=request.question, role="user"))
+            await session.save()
         
+        # Get answer from chatbot
         answer = app.chatbot.get_answer(request.question, session_id)
         
-        session = Session(
-            session_id=session_id,
-            user_id=str(current_user.user_id),
-            messages=[
-                Message(content=request.question, role="user"),
-                Message(content=answer, role="assistant")
-            ]
-        )
-        await session.insert()
+        # Append assistant's response to session
+        session.messages.append(Message(content=answer, role="assistant"))
+        await session.save()
         
         return ChatResponse(
             answer=answer,
@@ -181,8 +204,16 @@ async def chat(
         )
         
     except Exception as e:
-        logger.error(f"Error during chat: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = f"Error during chat: {type(e).__name__}: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": error_msg,
+                "type": type(e).__name__,
+                "message": str(e) if str(e) else "Unknown error occurred"
+            }
+        )
 
 @app.get("/sessions", response_model=List[SessionResponse])
 async def get_sessions(current_user: DBUser = Depends(get_current_user)):
