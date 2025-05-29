@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 from typing import List
 
 from beanie import Document
-from pydantic import Field
+from pydantic import Field, BaseModel
 
-class Message(Document):
+class Message(BaseModel):
     content: str
     role: str  # "user" or "assistant"
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
