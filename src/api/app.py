@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
@@ -14,8 +14,9 @@ from data_model.pydantic_models.auth import Token, User, UserCreate
 from data_model.pydantic_models.chat import ChatRequest, ChatResponse, SessionResponse
 from data_model.mongo_db.schemas.user import User as DBUser
 from data_model.mongo_db.schemas.session import Session, Message
-from data_ingestion.url_to_txt import URLIngestion
-from data_ingestion.docs_ingestion import DocumentIngestion
+from data_ingestion.web_scraper import URLIngestion
+from data_ingestion.vespa_ingestion import DocumentIngestion
+from data_ingestion.file_processor import FileIngestion
 from core.logger import get_logger
 from core.utils import delete_temporary_files
 from src.chatbot import Chatbot
@@ -138,6 +139,72 @@ async def ingest_urls(urls: List[str], current_user: DBUser = Depends(get_curren
         # Ensure the webdriver is closed
         if 'url_ingestion' in locals():
             url_ingestion.driver.quit()
+
+@app.post("/ingest-file")
+async def ingest_file(
+    file: UploadFile = File(...),
+    current_user: DBUser = Depends(get_current_user)
+):
+    """
+    Ingest content from an uploaded PDF or TXT file into the Vespa vector database.
+    Only users with admin privileges can access this endpoint.
+    
+    Args:
+        file: The uploaded file (PDF or TXT)
+        current_user: Current authenticated user
+        
+    Returns:
+        dict: Status message and file information
+        
+    Raises:
+        HTTPException: If user is not an admin or if ingestion fails
+    """
+    # Only admin users can ingest files
+    if current_user.user_type != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin users can ingest files"
+        )
+    
+    # Check file type
+    if not file.filename.lower().endswith(('.pdf', '.txt')):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF and TXT files are supported"
+        )
+    
+    try:
+        # Read file content
+        file_content = await file.read()
+        
+        # Initialize ingestion classes
+        file_ingestion = FileIngestion()
+        doc_ingestion = DocumentIngestion()
+        
+        # Process file and extract text
+        text = file_ingestion.process_file(file_content, file.filename)
+        
+        if not text:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Could not extract text from file"
+            )
+        
+        # Ingest document into Vespa
+        doc_ingestion.ingest_documents()
+        
+        # Clean up temporary files
+        delete_temporary_files()
+        
+        return {
+            "status": "success",
+            "message": "File successfully ingested into Vespa",
+            "filename": file.filename
+        }
+        
+    except Exception as e:
+        logger.error(f"Error during file ingestion: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(

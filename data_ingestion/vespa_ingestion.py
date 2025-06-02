@@ -7,7 +7,7 @@ import hashlib
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from core.logger import get_logger
 from core.settings import ROOT_DIR, VESPA_HOST, VESPA_PORT
-from data_ingestion.embedder import Embedder
+from data_ingestion.text_embedder import Embedder
 from data_model.vespa_ai.vespa_client import VespaClient
 
 logger = get_logger(__name__, log_file="ingestion.log")
