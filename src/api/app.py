@@ -314,3 +314,59 @@ async def get_sessions(current_user: DBUser = Depends(get_current_user)):
                 "message": str(e) if str(e) else "Unknown error occurred"
             }
         )
+
+@app.delete("/sessions/{session_id}")
+async def delete_session(
+    session_id: str,
+    current_user: DBUser = Depends(get_current_user)
+):
+    """
+    Delete a specific chat session.
+    
+    Args:
+        session_id: ID of the session to delete
+        current_user: Current authenticated user
+        
+    Returns:
+        dict: Success message
+        
+    Raises:
+        HTTPException: If session not found or user not authorized
+    """
+    try:
+        # Find the session
+        session = await Session.find_one(Session.session_id == session_id)
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Session not found"
+            )
+            
+        # Verify session belongs to user
+        if session.user_id != str(current_user.user_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this session"
+            )
+            
+        # Delete the session
+        await session.delete()
+        
+        return {
+            "status": "success",
+            "message": f"Session {session_id} successfully deleted"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_msg = f"Error deleting session: {type(e).__name__}: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": error_msg,
+                "type": type(e).__name__,
+                "message": str(e) if str(e) else "Unknown error occurred"
+            }
+        )
