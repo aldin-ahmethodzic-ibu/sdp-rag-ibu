@@ -1,5 +1,5 @@
 from data_model.vespa_ai.vespa_client import VespaClient
-from data_ingestion.embedder import Embedder
+from data_ingestion.text_embedder import Embedder
 from dotenv import load_dotenv
 from typing import List, Dict
 from core.settings import VESPA_HOST, VESPA_PORT
