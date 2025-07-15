@@ -10,6 +10,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 
 MONGO_URI = os.environ.get("MONGO_URI")
 DATABASE_NAME = os.environ.get("DATABASE_NAME")
+ALLOW_ORIGINS = os.environ.get("ALLOW_ORIGINS")
 
 VESPA_HOST = os.environ.get("VESPA_HOST")
 VESPA_PORT = os.environ.get("VESPA_PORT")

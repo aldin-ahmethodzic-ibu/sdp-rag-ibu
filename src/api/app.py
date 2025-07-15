@@ -19,6 +19,7 @@ from data_ingestion.vespa_ingestion import DocumentIngestion
 from data_ingestion.file_processor import FileIngestion
 from core.logger import get_logger
 from core.utils import delete_temporary_files
+from core.settings import ALLOW_ORIGINS
 from src.chatbot import Chatbot
 import uuid
 
@@ -26,7 +27,7 @@ app = FastAPI(title="SDP RAG API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[ALLOW_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
